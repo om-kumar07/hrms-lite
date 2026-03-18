@@ -28,6 +28,19 @@ class EmployeeCreate(BaseModel):
         return cleaned
 
 
+class EmployeeUpdate(BaseModel):
+    full_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    department: Optional[str] = None
+
+    @field_validator("full_name", "department")
+    @classmethod
+    def must_not_be_blank_if_provided(cls, value, info):
+        if value is not None and (not value or not value.strip()):
+            raise ValueError(f"{info.field_name} cannot be empty")
+        return value.strip() if value else value
+
+
 class EmployeeResponse(BaseModel):
     id: int
     employee_id: str

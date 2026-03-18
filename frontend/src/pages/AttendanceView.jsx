@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+} from "recharts";
+import {
   fetchEmployee,
   fetchAttendance,
   fetchAttendanceSummary,
@@ -61,8 +64,6 @@ function AttendanceView() {
         status: markStatus,
       });
       showToast("Attendance marked successfully", "success");
-
-      // refresh the data
       const [attendanceData, summaryData] = await Promise.all([
         fetchAttendance(employeeId, filterStart || undefined, filterEnd || undefined),
         fetchAttendanceSummary(employeeId),
@@ -92,13 +93,16 @@ function AttendanceView() {
   function clearFilter() {
     setFilterStart("");
     setFilterEnd("");
-    // reload without filters
     fetchAttendance(employeeId).then(setRecords);
   }
 
   function showToast(message, type) {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 3500);
+  }
+
+  function getInitials(name) {
+    return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
   }
 
   function formatDate(dateStr) {
@@ -108,6 +112,22 @@ function AttendanceView() {
       month: "short",
       year: "numeric",
     });
+  }
+
+  // prepare monthly chart data from records
+  function getMonthlyChart() {
+    if (records.length === 0) return [];
+
+    const months = {};
+    records.forEach((rec) => {
+      const d = new Date(rec.date + "T00:00:00");
+      const key = d.toLocaleDateString("en-US", { month: "short" });
+      if (!months[key]) months[key] = { month: key, present: 0, absent: 0 };
+      if (rec.status === "Present") months[key].present++;
+      else months[key].absent++;
+    });
+
+    return Object.values(months).reverse();
   }
 
   if (loading) {
@@ -132,6 +152,8 @@ function AttendanceView() {
     );
   }
 
+  const monthlyData = getMonthlyChart();
+
   return (
     <div className="page-wrapper">
       {toast && (
@@ -140,47 +162,51 @@ function AttendanceView() {
         </div>
       )}
 
-      <a href="#" className="back-link" onClick={(e) => { e.preventDefault(); navigate("/employees"); }}>
-        &larr; Back to Employees
+      <a
+        href="#"
+        className="back-link"
+        onClick={(e) => { e.preventDefault(); navigate("/employees"); }}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        Back to Employees
       </a>
 
-      {/* employee info header */}
+      {/* employee profile header */}
       <div className="attendance-header">
-        <div className="employee-info">
-          <h3>{employee?.full_name}</h3>
-          <p>{employee?.employee_id} &middot; {employee?.department} &middot; {employee?.email}</p>
+        <div className="employee-profile">
+          <div className="profile-avatar">{getInitials(employee?.full_name || "")}</div>
+          <div className="employee-info">
+            <h3>{employee?.full_name}</h3>
+            <p>{employee?.employee_id} &middot; {employee?.department} &middot; {employee?.email}</p>
+          </div>
         </div>
         {summary && (
           <div className="summary-chips">
             <div className="summary-chip">
-              <div className="chip-value" style={{ color: "var(--color-primary)" }}>
-                {summary.total_days}
-              </div>
+              <div className="chip-value" style={{ color: "var(--accent)" }}>{summary.total_days}</div>
               <div className="chip-label">Total Days</div>
             </div>
             <div className="summary-chip">
-              <div className="chip-value" style={{ color: "var(--color-success)" }}>
-                {summary.present_days}
-              </div>
+              <div className="chip-value" style={{ color: "var(--success)" }}>{summary.present_days}</div>
               <div className="chip-label">Present</div>
             </div>
             <div className="summary-chip">
-              <div className="chip-value" style={{ color: "var(--color-danger)" }}>
-                {summary.absent_days}
-              </div>
+              <div className="chip-value" style={{ color: "var(--danger)" }}>{summary.absent_days}</div>
               <div className="chip-label">Absent</div>
             </div>
           </div>
         )}
       </div>
 
-      {/* mark attendance form */}
-      <div className="form-card" style={{ maxWidth: "100%", marginBottom: "24px" }}>
-        <h3 style={{ fontSize: "0.95rem", marginBottom: "14px", fontWeight: 600 }}>
+      {/* mark attendance */}
+      <div className="glass-card mark-attendance-card">
+        <h3 style={{ fontSize: "0.95rem", marginBottom: "16px", fontWeight: 600 }}>
           Mark Attendance
         </h3>
-        <form onSubmit={handleMark} style={{ display: "flex", alignItems: "flex-end", gap: "12px", flexWrap: "wrap" }}>
-          <div className="form-group" style={{ marginBottom: 0 }}>
+        <form onSubmit={handleMark} className="mark-form">
+          <div className="form-group">
             <label htmlFor="mark-date">Date</label>
             <input
               id="mark-date"
@@ -190,7 +216,7 @@ function AttendanceView() {
               required
             />
           </div>
-          <div className="form-group" style={{ marginBottom: 0 }}>
+          <div className="form-group">
             <label htmlFor="mark-status">Status</label>
             <select
               id="mark-status"
@@ -202,34 +228,60 @@ function AttendanceView() {
             </select>
           </div>
           <button type="submit" className="btn btn-primary" disabled={marking}>
-            {marking ? "Marking..." : "Mark"}
+            {marking ? "Marking..." : "Mark Attendance"}
           </button>
         </form>
       </div>
 
+      {/* monthly chart */}
+      {monthlyData.length > 0 && (
+        <div className="glass-card chart-card" style={{ marginBottom: "24px" }}>
+          <h3>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="20" x2="18" y2="10" />
+              <line x1="12" y1="20" x2="12" y2="4" />
+              <line x1="6" y1="20" x2="6" y2="14" />
+            </svg>
+            Monthly Breakdown
+          </h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={monthlyData} barGap={4}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+              <XAxis
+                dataKey="month"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "var(--text-muted)", fontSize: 12 }}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "var(--text-muted)", fontSize: 12 }}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--bg-card-solid)",
+                  border: "1px solid var(--border-color)",
+                  borderRadius: "8px",
+                  fontSize: "0.82rem",
+                }}
+              />
+              <Bar dataKey="present" fill="#34d399" radius={[4, 4, 0, 0]} name="Present" />
+              <Bar dataKey="absent" fill="#f87171" radius={[4, 4, 0, 0]} name="Absent" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
       {/* date filter */}
       <div className="filter-bar">
-        <label>Filter:</label>
-        <input
-          type="date"
-          value={filterStart}
-          onChange={(e) => setFilterStart(e.target.value)}
-          placeholder="Start date"
-        />
-        <span style={{ color: "var(--color-text-muted)" }}>to</span>
-        <input
-          type="date"
-          value={filterEnd}
-          onChange={(e) => setFilterEnd(e.target.value)}
-          placeholder="End date"
-        />
-        <button className="btn btn-secondary btn-sm" onClick={applyFilter}>
-          Apply
-        </button>
+        <label>Filter by date:</label>
+        <input type="date" value={filterStart} onChange={(e) => setFilterStart(e.target.value)} />
+        <span style={{ color: "var(--text-muted)" }}>to</span>
+        <input type="date" value={filterEnd} onChange={(e) => setFilterEnd(e.target.value)} />
+        <button className="btn btn-ghost btn-sm" onClick={applyFilter}>Apply</button>
         {(filterStart || filterEnd) && (
-          <button className="btn btn-secondary btn-sm" onClick={clearFilter}>
-            Clear
-          </button>
+          <button className="btn btn-ghost btn-sm" onClick={clearFilter}>Clear</button>
         )}
       </div>
 
@@ -237,18 +289,26 @@ function AttendanceView() {
       {records.length === 0 ? (
         <div className="data-table-wrapper">
           <div className="empty-state">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
+            <div className="empty-state-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+            </div>
             <h3>No attendance records</h3>
             <p>Use the form above to start marking attendance</p>
           </div>
         </div>
       ) : (
         <div className="data-table-wrapper">
+          <div className="table-header">
+            <h3>Attendance Records</h3>
+            <span style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>
+              {records.length} record{records.length !== 1 ? "s" : ""}
+            </span>
+          </div>
           <table className="data-table">
             <thead>
               <tr>

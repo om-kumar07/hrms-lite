@@ -43,6 +43,13 @@ export function deleteEmployee(employeeId) {
   });
 }
 
+export function updateEmployee(employeeId, data) {
+  return request(`/api/employees/${employeeId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
 
 // -- Attendance API calls --
 

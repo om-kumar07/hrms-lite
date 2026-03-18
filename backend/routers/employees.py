@@ -4,7 +4,7 @@ from typing import List
 
 from database import get_db
 from models import Employee
-from schemas import EmployeeCreate, EmployeeResponse
+from schemas import EmployeeCreate, EmployeeUpdate, EmployeeResponse
 
 router = APIRouter(prefix="/api/employees", tags=["Employees"])
 
@@ -54,6 +54,32 @@ def get_employee(employee_id: str, db: Session = Depends(get_db)):
     employee = db.query(Employee).filter(Employee.employee_id == employee_id).first()
     if not employee:
         raise HTTPException(status_code=404, detail="Employee not found")
+    return employee
+
+
+@router.put("/{employee_id}", response_model=EmployeeResponse)
+def update_employee(employee_id: str, payload: EmployeeUpdate, db: Session = Depends(get_db)):
+    """Update an existing employee's details."""
+    employee = db.query(Employee).filter(Employee.employee_id == employee_id).first()
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+
+    if payload.full_name is not None:
+        employee.full_name = payload.full_name
+    if payload.email is not None:
+        # check email uniqueness
+        existing = db.query(Employee).filter(
+            Employee.email == payload.email,
+            Employee.employee_id != employee_id
+        ).first()
+        if existing:
+            raise HTTPException(status_code=409, detail="Email already taken by another employee")
+        employee.email = payload.email
+    if payload.department is not None:
+        employee.department = payload.department
+
+    db.commit()
+    db.refresh(employee)
     return employee
 
 
