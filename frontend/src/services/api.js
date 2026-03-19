@@ -1,5 +1,4 @@
-// Base URL for the API - in dev we use the Vite proxy,
-// in production this points to the deployed backend
+// Base URL for the API - uses Vite proxy in dev, deployed backend URL in production
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
 async function request(url, options = {}) {
@@ -23,7 +22,7 @@ async function request(url, options = {}) {
 // -- Employee API calls --
 
 export function fetchEmployees() {
-  return request("/api/employees");
+  return request("/api/employees/");
 }
 
 export function fetchEmployee(employeeId) {
