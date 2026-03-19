@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/attendance", tags=["Attendance"])
 
 @router.post("/", response_model=AttendanceResponse, status_code=201)
 def mark_attendance(payload: AttendanceCreate, db: Session = Depends(get_db)):
-    """Mark attendance for an employee on a specific date."""
+    """Mark attendance (Present/Absent) for an employee on a specific date."""
 
     # make sure the employee actually exists
     employee = db.query(Employee).filter(Employee.employee_id == payload.employee_id).first()
@@ -74,7 +74,7 @@ def get_attendance(
 
 @router.get("/{employee_id}/summary", response_model=AttendanceSummary)
 def get_attendance_summary(employee_id: str, db: Session = Depends(get_db)):
-    """Get a summary of attendance stats for a specific employee."""
+    """Get aggregated present/absent day counts for a specific employee."""
 
     employee = db.query(Employee).filter(Employee.employee_id == employee_id).first()
     if not employee:

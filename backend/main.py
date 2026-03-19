@@ -10,8 +10,8 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="HRMS Lite API",
-    description="A lightweight Human Resource Management System API",
-    version="1.0.0",
+    description="A lightweight HR Management System with employee CRUD, attendance tracking, and dashboard analytics",
+    version="2.0.0",
 )
 
 # CORS setup - allow the frontend to talk to this backend
@@ -34,4 +34,5 @@ app.include_router(dashboard.router)
 
 @app.get("/")
 def health_check():
-    return {"status": "ok", "service": "HRMS Lite API"}
+    """Health check endpoint used by the frontend cold-start screen."""
+    return {"status": "ok", "service": "HRMS Lite API", "version": "2.0.0"}

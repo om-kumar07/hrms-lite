@@ -6,6 +6,7 @@ from database import Base
 
 
 class Employee(Base):
+    """Represents an employee in the organization."""
     __tablename__ = "employees"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -25,6 +26,7 @@ class Employee(Base):
 
 
 class Attendance(Base):
+    """Tracks daily attendance (Present/Absent) for each employee."""
     __tablename__ = "attendance"
 
     id = Column(Integer, primary_key=True, index=True)

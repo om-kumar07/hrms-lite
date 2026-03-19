@@ -12,8 +12,8 @@ router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 @router.get("/summary", response_model=DashboardStats)
 def get_dashboard_summary(db: Session = Depends(get_db)):
     """
-    Returns a quick overview of employee and attendance numbers.
-    Used by the frontend dashboard page.
+    Returns real-time overview: total employees, present/absent today,
+    and count of employees with unmarked attendance.
     """
     total_employees = db.query(Employee).count()
 

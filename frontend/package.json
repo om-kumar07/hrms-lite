@@ -1,7 +1,8 @@
 {
   "name": "hrms-lite",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "description": "HR Management System — employee CRUD, attendance tracking, and dashboard analytics",
   "type": "module",
   "scripts": {
     "dev": "vite",
